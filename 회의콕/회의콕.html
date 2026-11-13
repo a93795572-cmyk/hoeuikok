@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회의콕</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    --ground:#F3F4F6; --panel:#FFFFFF; --sunk:#F7F8FA; --ink:#14171C; --ink2:#4E5562; --ink3:#7A818D;
+    --line:#E2E5E9; --accent:#002C5F; --accent-ink:#FFFFFF; --accent-soft:#E3EAF3;
+    --ok:#0B7A5C; --ok-soft:#DDF1EA; --warn:#A44A12; --warn-soft:#FBE9DC; --danger:#B42318;
+    --t-work:#DCE6F2; --t-out:#D6ECE6; --t-edu:#F3E4C8; --t-off:#E4E6EA; --t-mtg:#002C5F; --t-etc:#ECEEF1;
+    --r:6px;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0;background:var(--ground);color:var(--ink);
+    font-family:Pretendard,"Pretendard Variable","Malgun Gothic","Apple SD Gothic Neo",sans-serif;font-size:14px;line-height:1.5;
+    -webkit-font-smoothing:antialiased}
+  button,input,select,textarea{font:inherit;color:inherit}
+  h1,h2,h3{margin:0;letter-spacing:-0.02em}
+
+  /* ---------- 상단 바 ---------- */
+  .bar{display:flex;align-items:center;gap:28px;padding:0 24px;height:60px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  .brand{font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-0.04em;white-space:nowrap}
+  .tabs{display:flex;gap:4px;height:100%}
+  .tab{white-space:nowrap;border:0;background:none;padding:0 14px;height:100%;font-weight:600;color:var(--ink2);cursor:pointer;position:relative}
+  .tab:hover{color:var(--ink)}
+  .tab[aria-selected="true"]{color:var(--accent)}
+  .tab[aria-selected="true"]::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;background:var(--accent);border-radius:3px 3px 0 0}
+  .me{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--ink2);white-space:nowrap}
+  .me select{min-width:170px}
+
+  main{padding:24px;max-width:1360px;margin:0 auto}
+  .view{display:none}
+  .view.on{display:block}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+  .head h1{font-size:26px;font-weight:800}
+  .head p{margin:4px 0 0;color:var(--ink2)}
+
+  /* ---------- 패널·폼 ---------- */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+  .panel h2{font-size:16px;font-weight:700;margin-bottom:14px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .field > span{font-weight:600;font-size:13px;color:var(--ink2)}
+  .hint,.field > span.hint{font-size:12.5px;color:var(--ink3);font-weight:400}
+  input[type=text],input[type=email],input[type=date],input[type=time],input[type=number],select,textarea{
+    width:100%;height:38px;padding:0 10px;border:1px solid #CDD2D8;border-radius:var(--r);background:#fff}
+  textarea{height:auto;padding:8px 10px;resize:vertical}
+  input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .row{display:grid;gap:10px}
+  .c2{grid-template-columns:1fr 1fr}
+  .c3{grid-template-columns:1fr 1fr 1fr}
+  .check{display:flex;align-items:center;gap:8px;margin:4px 0;cursor:pointer}
+  .check input{width:16px;height:16px;accent-color:var(--accent)}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 16px;border-radius:var(--r);
+    border:1px solid #CDD2D8;background:#fff;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .12s,transform .06s}
+  .btn:hover{background:var(--sunk)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .btn.primary:hover{background:#0A3B75}
+  .btn.big{height:46px;font-size:15px;width:100%}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--ink2)}
+  .btn.ghost:hover{background:var(--sunk);color:var(--ink)}
+  .btn.danger{color:var(--danger)}
+  .btn.sm{height:30px;padding:0 10px;font-size:13px}
+  .btn:disabled{opacity:.5;cursor:default}
+
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{height:34px;padding:0 12px;border:1px solid #CDD2D8;border-radius:999px;background:#fff;cursor:pointer;font-weight:600;color:var(--ink2)}
+  .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* ---------- 회의 잡기 ---------- */
+  .plan{display:grid;grid-template-columns:420px 1fr;gap:20px;align-items:start}
+  .reqline{display:grid;grid-template-columns:1.3fr 1fr 64px 30px;gap:6px;margin-bottom:6px;align-items:center}
+  .reqline .x{height:30px;width:30px;border:0;background:none;color:var(--ink3);cursor:pointer;border-radius:var(--r);font-size:18px}
+  .reqline .x:hover{background:var(--sunk);color:var(--danger)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 6px 0 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:13px}
+  .chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:15px;width:20px;height:20px;border-radius:50%}
+  .chip button:hover{background:#C9D6E6}
+  .picker{position:relative}
+  .picker-list{position:absolute;left:0;right:0;top:40px;background:#fff;border:1px solid var(--line);border-radius:var(--r);max-height:240px;overflow:auto;z-index:4;box-shadow:0 8px 24px rgba(20,23,28,.12);display:none}
+  .picker-list.on{display:block}
+  .picker-list button{display:flex;justify-content:space-between;width:100%;border:0;background:#fff;padding:9px 12px;text-align:left;cursor:pointer}
+  .picker-list button:hover,.picker-list button.act{background:var(--sunk)}
+  .picker-list small{color:var(--ink3)}
+
+  .results-empty{display:flex;flex-direction:column;justify-content:center;min-height:520px;padding:40px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+  .results-empty h2{font-size:22px;font-weight:800;margin-bottom:10px}
+  .results-empty ol{margin:8px 0 0;padding-left:20px;color:var(--ink2);line-height:1.9}
+
+  .summary{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .summary h2{font-size:20px;font-weight:800}
+  .summary span{color:var(--ink2)}
+  .slot{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:12px;display:grid;grid-template-columns:200px 1fr auto;gap:20px;align-items:start}
+  .slot.best{border:2px solid var(--accent);padding:17px 19px}
+  .when .d{font-size:15px;font-weight:700;color:var(--ink2)}
+  .when .t{font-size:28px;font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-top:2px}
+  .when .r{margin-top:8px;color:var(--ink2)}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--ok-soft);color:var(--ok);margin-bottom:6px}
+  .tag.warn{background:var(--warn-soft);color:var(--warn)}
+  .who{display:flex;flex-direction:column;gap:8px}
+  .who-line{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:baseline}
+  .who-line b{font-weight:700}
+  .who-line .alt{color:var(--ink3);font-size:12.5px;margin-left:6px}
+  .miss{color:var(--warn);font-size:13px}
+
+  /* ---------- 일정 ---------- */
+  .sched{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+  .weekbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .weekbar strong{font-size:16px;margin:0 6px}
+  .week{display:grid;grid-template-columns:52px repeat(7,1fr);background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .week .dh{padding:10px 8px;font-weight:700;text-align:center;border-bottom:1px solid var(--line);background:var(--sunk);font-size:13px}
+  .week .dh.today{color:var(--accent)}
+  .week .dh.we{color:var(--ink3)}
+  .hours{position:relative}
+  .hours div{height:var(--hh);font-size:11.5px;color:var(--ink3);text-align:right;padding-right:6px;transform:translateY(-7px)}
+  .col{position:relative;border-left:1px solid var(--line);background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--hh) - 1px),#EEF0F3 calc(var(--hh) - 1px),#EEF0F3 var(--hh))}
+  .col .off{position:absolute;left:0;right:0;background:rgba(20,23,28,.045)}
+  .ev{position:absolute;left:3px;right:3px;border-radius:4px;padding:3px 6px;font-size:12px;line-height:1.3;overflow:hidden;cursor:pointer;border:0;text-align:left;color:var(--ink)}
+  .ev:hover{filter:brightness(.96)}
+  .ev b{display:block;font-weight:700}
+  .ev.t-개인업무{background:var(--t-work)} .ev.t-외근{background:var(--t-out)} .ev.t-교육{background:var(--t-edu)}
+  .ev.t-휴무{background:var(--t-off);color:var(--ink2)} .ev.t-회의{background:var(--t-mtg);color:#fff} .ev.t-기타{background:var(--t-etc)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;color:var(--ink2);font-size:12.5px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+  /* ---------- 표 ---------- */
+  .tbl{width:100%;border-collapse:collapse;background:var(--panel)}
+  .tbl th{font-size:13px;color:var(--ink2);font-weight:700;text-align:left;padding:10px 12px;background:var(--sunk);border-bottom:1px solid var(--line)}
+  .tbl td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .tbl tr:hover td{background:#FAFBFC}
+  .tblwrap{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .people{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+  .muted{color:var(--ink3)}
+  .status{font-weight:700}
+  .status.cancel{color:var(--ink3);text-decoration:line-through}
+
+  /* ---------- 알림 ---------- */
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:var(--r);opacity:0;transition:opacity .2s,transform .2s;z-index:20;max-width:90vw}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--danger)}
+  .busy{position:fixed;inset:0;background:rgba(243,244,246,.6);display:none;align-items:center;justify-content:center;z-index:15;font-weight:700;color:var(--accent)}
+  .busy.on{display:flex}
+
+  @media (max-width: 980px){
+    .plan,.sched,.people{grid-template-columns:1fr}
+    .slot{grid-template-columns:1fr}
+    .bar{flex-wrap:wrap;height:auto;padding:10px 12px 0;gap:6px 12px}
+    .tabs{order:3;width:100%;height:44px;overflow-x:auto}
+    .tab{padding:0 10px}
+    .me select{min-width:0;max-width:56vw}
+    .head{flex-wrap:wrap}
+    main{padding:16px}
+    .week{font-size:11px}
+  }
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand">회의콕</div>
+  <nav class="tabs" role="tablist" aria-label="메뉴">
+    <button class="tab" role="tab" data-view="plan" aria-selected="true">회의 잡기</button>
+    <button class="tab" role="tab" data-view="sched" aria-selected="false">내 일정</button>
+    <button class="tab" role="tab" data-view="mtgs" aria-selected="false">회의 목록</button>
+    <button class="tab" role="tab" data-view="people" aria-selected="false">직원 정보</button>
+  </nav>
+  <label class="me">사용자 <select id="meSel" aria-label="현재 사용자"></select></label>
+</header>
+
+<main>
+  <!-- ================= 회의 잡기 ================= -->
+  <section class="view on" id="v-plan" aria-labelledby="h-plan">
+    <div class="head">
+      <div>
+        <h1 id="h-plan">회의 잡기</h1>
+        <p>조건만 넣으면 모두가 비어 있는 시간과 부서별 참석자를 찾아 드립니다.</p>
+      </div>
+    </div>
+    <div class="plan">
+      <form class="panel" id="planForm" autocomplete="off">
+        <label class="field"><span>안건 유형</span>
+          <select id="agenda"></select>
+          <span class="hint">고르면 필요한 부서와 직급이 자동으로 채워집니다.</span>
+        </label>
+        <label class="field"><span>회의 제목</span>
+          <input type="text" id="title" placeholder="예: 전장 부품 입고 지연 대응">
+        </label>
+
+        <div class="field"><span>필요 부서 · 최소 직급 · 인원</span>
+          <div id="reqLines"></div>
+          <button type="button" class="btn sm ghost" id="addReq" style="align-self:flex-start">+ 부서 추가</button>
+        </div>
+
+        <div class="field"><span>꼭 참석해야 하는 사람</span>
+          <div class="picker">
+            <input type="text" id="reqPeopleInput" placeholder="이름이나 부서로 찾기" aria-label="필수 참석자 검색" role="combobox" aria-expanded="false" aria-controls="reqPeopleList">
+            <div class="picker-list" id="reqPeopleList" role="listbox"></div>
+          </div>
+          <div class="chips" id="reqPeopleChips"></div>
+          <label class="check"><input type="checkbox" id="meToo" checked> 나(주관자)도 참석</label>
+        </div>
+
+        <div class="field"><span>회의 길이</span>
+          <div class="seg" id="durSeg">
+            <button type="button" data-min="30" aria-pressed="false">30분</button>
+            <button type="button" data-min="60" aria-pressed="true">1시간</button>
+            <button type="button" data-min="90" aria-pressed="false">1시간 30분</button>
+            <button type="button" data-min="120" aria-pressed="false">2시간</button>
+          </div>
+        </div>
+
+        <div class="row c2">
+          <label class="field"><span>찾기 시작</span><input type="date" id="fromDate"></label>
+          <div></div>
+        </div>
+        <div class="row c2">
+          <label class="field"><span>이때까지 끝나야 함 (날짜)</span><input type="date" id="dlDate" required></label>
+          <label class="field"><span>마감 시각</span><input type="time" id="dlTime" value="18:00" step="600"></label>
+        </div>
+
+        <label class="field"><span>회의실</span><select id="roomSel"></select></label>
+        <label class="check"><input type="checkbox" id="skipWe" checked> 주말 제외</label>
+        <label class="check"><input type="checkbox" id="sendInv"> 확정 시 구글 캘린더 초대 보내기 (이메일 등록자만)</label>
+
+        <button class="btn primary big" type="submit" style="margin-top:14px">빈 시간 찾기</button>
+      </form>
+
+      <div id="results">
+        <div class="results-empty">
+          <h2>왼쪽 조건을 채우고 ‘빈 시간 찾기’를 누르세요</h2>
+          <p class="muted" style="margin:0">회의콕은 이렇게 찾습니다.</p>
+          <ol>
+            <li>꼭 참석해야 하는 사람이 모두 비어 있는 시간만 남깁니다.</li>
+            <li>부서마다 최소 직급 이상이면서 그 시간이 빈 사람을 고릅니다. 직급이 조건에 가장 가까운 사람이 먼저입니다.</li>
+            <li>출퇴근 시간 밖, 휴무, 등록된 일정과 겹치는 시간은 빼고 마감 전에 끝나는 시간만 보여 줍니다.</li>
+            <li>인원에 맞는 빈 회의실까지 붙여 가장 빠른 순서로 추천합니다.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 내 일정 ================= -->
+  <section class="view" id="v-sched" aria-labelledby="h-sched">
+    <div class="head">
+      <div>
+        <h1 id="h-sched">일정</h1>
+        <p>여기 등록된 일정과 출퇴근 시간으로 빈 시간을 계산합니다. 일정을 누르면 고칠 수 있어요.</p>
+      </div>
+      <label class="field" style="margin:0;min-width:220px"><span>누구의 일정</span><select id="schedWho"></select></label>
+    </div>
+    <div class="sched">
+      <div>
+        <div class="weekbar">
+          <button class="btn sm" id="wkPrev" aria-label="이전 주">‹</button>
+          <strong id="wkLabel"></strong>
+          <button class="btn sm" id="wkNext" aria-label="다음 주">›</button>
+          <button class="btn sm ghost" id="wkToday">이번 주</button>
+        </div>
+        <div class="week" id="week"></div>
+        <div class="legend">
+          <span><i style="background:var(--t-work)"></i>개인업무</span><span><i style="background:var(--t-out)"></i>외근</span>
+          <span><i style="background:var(--t-edu)"></i>교육</span><span><i style="background:var(--t-off)"></i>휴무</span>
+          <span><i style="background:var(--t-mtg)"></i>회의</span><span><i style="background:rgba(20,23,28,.08)"></i>근무시간 밖</span>
+        </div>
+      </div>
+      <form class="panel" id="schForm" autocomplete="off">
+        <h2 id="schFormTitle">일정 등록</h2>
+        <input type="hidden" id="schId">
+        <label class="field"><span>유형</span><select id="schType"></select></label>
+        <label class="field"><span>날짜</span><input type="date" id="schDate" required></label>
+        <div class="row c2" id="schTimes">
+          <label class="field"><span>시작</span><input type="time" id="schStart" value="09:00" step="600"></label>
+          <label class="field"><span>끝</span><input type="time" id="schEnd" value="10:00" step="600"></label>
+        </div>
+        <label class="field"><span>메모</span><input type="text" id="schMemo" placeholder="예: 협력사 방문"></label>
+        <div id="repeatBox">
+          <label class="field"><span>반복 (이 날짜까지 매일)</span><input type="date" id="schRepeat"></label>
+          <label class="check"><input type="checkbox" id="schSkipWe" checked> 반복할 때 주말 제외</label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn primary" type="submit" style="flex:1">저장</button>
+          <button class="btn danger" type="button" id="schDel" hidden>삭제</button>
+          <button class="btn ghost" type="button" id="schNew" hidden>새로 쓰기</button>
+        </div>
+        <p class="hint" id="workHint" style="margin:14px 0 0"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= 회의 목록 ================= -->
+  <section class="view" id="v-mtgs" aria-labelledby="h-mtgs">
+    <div class="head">
+      <div><h1 id="h-mtgs">회의 목록</h1><p>확정한 회의입니다. 취소하면 참석자 일정에서도 함께 빠집니다.</p></div>
+      <label class="check"><input type="checkbox" id="onlyMine"> 내가 참석하는 회의만</label>
+    </div>
+    <div class="tblwrap"><table class="tbl" id="mtgTbl"></table></div>
+  </section>
+
+  <!-- ================= 직원 정보 ================= -->
+  <section class="view" id="v-people" aria-labelledby="h-people">
+    <div class="head">
+      <div><h1 id="h-people">직원 정보</h1><p>이름·부서·직급과 출퇴근 시간을 관리합니다. 줄을 누르면 고칠 수 있어요.</p></div>
+      <input type="text" id="peopleSearch" placeholder="이름·부서·직급 검색" aria-label="직원 검색" style="max-width:260px">
+    </div>
+    <div class="people">
+      <div class="tblwrap"><table class="tbl" id="empTbl"></table></div>
+      <form class="panel" id="empForm" autocomplete="off">
+        <h2 id="empFormTitle">직원 등록</h2>
+        <input type="hidden" id="empId">
+        <label class="field"><span>이름</span><input type="text" id="empName" required></label>
+        <div class="row c2">
+          <label class="field"><span>부서</span><input type="text" id="empDept" list="deptList" required></label>
+          <label class="field"><span>직급</span><select id="empRank"></select></label>
+        </div>
+        <datalist id="deptList"></datalist>
+        <label class="field"><span>담당 업무 · 라인</span><input type="text" id="empRole" placeholder="예: 의장 1라인 생산계획"></label>
+        <label class="field"><span>이메일 (캘린더 초대용, 선택)</span><input type="email" id="empEmail"></label>
+        <div class="row c2">
+          <label class="field"><span>출근</span><input type="time" id="empStart" value="08:00" step="600"></label>
+          <label class="field"><span>퇴근</span><input type="time" id="empEnd" value="17:00" step="600"></label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn primary" type="submit" style="flex:1">저장</button>
+          <button class="btn danger" type="button" id="empDel" hidden>삭제</button>
+          <button class="btn ghost" type="button" id="empNew" hidden>새로 쓰기</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="busy" id="busy">잠시만요…</div>
+
+<script>
+/* ================= 서버 호출 ================= */
+function call(fn){
+  var args = Array.prototype.slice.call(arguments,1);
+  return new Promise(function(res,rej){
+    var r = google.script.run.withSuccessHandler(res).withFailureHandler(function(e){ rej(e && e.message ? e.message : String(e)); });
+    r[fn].apply(r,args);
+  });
+}
+var busyN=0;
+function busy(on){ busyN+=on?1:-1; document.getElementById('busy').classList.toggle('on',busyN>0); }
+function run(fn){
+  var args=arguments; busy(true);
+  return call.apply(null,args).then(function(v){busy(false);return v;},function(e){busy(false);toast(e,true);throw e;});
+}
+var tTimer;
+function toast(msg,err){ var t=document.getElementById('toast'); t.textContent=msg; t.className='toast on'+(err?' err':''); clearTimeout(tTimer); tTimer=setTimeout(function(){t.className='toast';},err?5000:2600); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function $(id){ return document.getElementById(id); }
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem('hk.'+k); localStorage.setItem('hk.'+k,v);}catch(e){ return null; } }
+
+/* ================= 날짜 ================= */
+var WD=['일','월','화','수','목','금','토'];
+function pd(s){ var a=s.split('-'); return new Date(+a[0],+a[1]-1,+a[2]); }
+function fd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function addD(s,n){ var d=pd(s); d.setDate(d.getDate()+n); return fd(d); }
+function nice(s){ var d=pd(s); return (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+WD[d.getDay()]+')'; }
+function mins(hm){ var a=hm.split(':'); return +a[0]*60+ +a[1]; }
+function mondayOf(s){ var d=pd(s); var w=(d.getDay()+6)%7; d.setDate(d.getDate()-w); return fd(d); }
+
+/* ================= 상태 ================= */
+var S={ boot:null, emp:{}, me:'', reqPeople:[], dur:60, week:'', last:null };
+
+function boot(){
+  return run('getBootstrap').then(function(b){
+    S.boot=b; S.emp={}; b.employees.forEach(function(e){S.emp[e.id]=e;});
+    if(!S.me){
+      var saved=store('me'); var byMail=b.employees.filter(function(e){return b.userEmail && e.email===b.userEmail;})[0];
+      S.me = (saved && S.emp[saved]) ? saved : byMail ? byMail.id : (b.employees[0]||{}).id || '';
+    }
+    if(!S.week) S.week=mondayOf(b.today);
+    fillStatic(); renderEmpTable();
+  });
+}
+
+function opt(v,t,sel){ return '<option value="'+esc(v)+'"'+(sel?' selected':'')+'>'+esc(t)+'</option>'; }
+function empLabel(e){ return e.name+' '+e.rank+' · '+e.dept; }
+
+function fillStatic(){
+  var b=S.boot;
+  $('meSel').innerHTML=b.employees.map(function(e){return opt(e.id,empLabel(e),e.id===S.me);}).join('');
+  var who=$('schedWho').value||S.me;
+  $('schedWho').innerHTML=b.employees.map(function(e){return opt(e.id,empLabel(e),e.id===who);}).join('');
+  var ag=$('agenda').value;
+  $('agenda').innerHTML=opt('','직접 입력',!ag)+Object.keys(b.agenda).map(function(k){return opt(k,k,k===ag);}).join('');
+  $('roomSel').innerHTML=opt('','자동 배정 (인원에 맞는 빈 회의실)')+b.rooms.map(function(r){return opt(r.name,r.name+' · '+r.cap+'명');}).join('');
+  $('schType').innerHTML=b.scheduleTypes.filter(function(t){return t!=='회의';}).map(function(t){return opt(t,t);}).join('');
+  $('empRank').innerHTML=b.ranks.map(function(r){return opt(r,r);}).join('');
+  $('deptList').innerHTML=b.depts.map(function(d){return '<option value="'+esc(d)+'">';}).join('');
+  if(!$('fromDate').value) $('fromDate').value=b.today;
+  if(!$('dlDate').value) $('dlDate').value=addD(b.today,3);
+  if(!$('schDate').value) $('schDate').value=b.today;
+  if(!$('reqLines').children.length) addReqLine();
+}
+
+/* ================= 탭 ================= */
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click',function(){ showView(t.dataset.view); });
+});
+function showView(v){
+  document.querySelectorAll('.tab').forEach(function(t){t.setAttribute('aria-selected',t.dataset.view===v);});
+  document.querySelectorAll('.view').forEach(function(x){x.classList.toggle('on',x.id==='v-'+v);});
+  if(v==='sched') loadWeek();
+  if(v==='mtgs') loadMeetings();
+}
+$('meSel').addEventListener('change',function(){ S.me=this.value; store('me',S.me); $('schedWho').value=S.me; if($('v-sched').classList.contains('on')) loadWeek(); if($('v-mtgs').classList.contains('on')) renderMeetings(); });
+
+/* ================= 회의 잡기: 부서 조건 ================= */
+function addReqLine(r){
+  r=r||{dept:'',minRank:'',count:1};
+  var d=document.createElement('div'); d.className='reqline';
+  d.innerHTML='<select aria-label="부서">'+opt('','부서 선택')+S.boot.depts.map(function(x){return opt(x,x,x===r.dept);}).join('')+'</select>'+
+    '<select aria-label="최소 직급">'+opt('','직급 무관',!r.minRank)+S.boot.ranks.map(function(x){return opt(x,x+' 이상',x===r.minRank);}).join('')+'</select>'+
+    '<input type="number" min="1" max="10" value="'+(r.count||1)+'" aria-label="인원">'+
+    '<button type="button" class="x" aria-label="이 부서 빼기">×</button>';
+  d.querySelector('.x').onclick=function(){ d.remove(); };
+  $('reqLines').appendChild(d);
+}
+$('addReq').onclick=function(){ addReqLine(); };
+$('agenda').addEventListener('change',function(){
+  var list=S.boot.agenda[this.value];
+  $('reqLines').innerHTML='';
+  if(list) list.forEach(addReqLine); else addReqLine();
+  if(this.value && !$('title').value) $('title').placeholder=this.value+' 대응 회의';
+});
+function readReqs(){
+  return Array.prototype.map.call($('reqLines').children,function(d){
+    var f=d.querySelectorAll('select,input');
+    return {dept:f[0].value,minRank:f[1].value,count:+f[2].value||1};
+  }).filter(function(r){return r.dept;});
+}
+
+/* ================= 회의 잡기: 필수 참석자 ================= */
+var pickIdx=-1;
+function renderPicker(){
+  var q=$('reqPeopleInput').value.trim().toLowerCase();
+  var list=S.boot.employees.filter(function(e){
+    return S.reqPeople.indexOf(e.id)<0 && (!q || (e.name+e.dept+e.rank+e.role).toLowerCase().indexOf(q)>=0);
+  }).slice(0,30);
+  var box=$('reqPeopleList');
+  box.innerHTML=list.map(function(e,i){return '<button type="button" role="option" data-id="'+e.id+'" class="'+(i===pickIdx?'act':'')+'"><span>'+esc(e.name)+' '+esc(e.rank)+'</span><small>'+esc(e.dept)+(e.role?' · '+esc(e.role):'')+'</small></button>';}).join('')||'<div class="muted" style="padding:10px 12px">찾는 사람이 없어요</div>';
+  box.classList.add('on'); $('reqPeopleInput').setAttribute('aria-expanded','true');
+  box.querySelectorAll('button').forEach(function(b){ b.onmousedown=function(ev){ev.preventDefault(); addPerson(b.dataset.id);}; });
+}
+function addPerson(id){ if(S.reqPeople.indexOf(id)<0) S.reqPeople.push(id); $('reqPeopleInput').value=''; pickIdx=-1; renderChips(); renderPicker(); }
+function renderChips(){
+  $('reqPeopleChips').innerHTML=S.reqPeople.map(function(id){var e=S.emp[id]; if(!e) return ''; return '<span class="chip">'+esc(e.name)+' '+esc(e.rank)+'<button type="button" data-id="'+id+'" aria-label="'+esc(e.name)+' 빼기">×</button></span>';}).join('');
+  $('reqPeopleChips').querySelectorAll('button').forEach(function(b){b.onclick=function(){S.reqPeople=S.reqPeople.filter(function(x){return x!==b.dataset.id;}); renderChips();};});
+}
+$('reqPeopleInput').addEventListener('focus',function(){pickIdx=-1;renderPicker();});
+$('reqPeopleInput').addEventListener('input',function(){pickIdx=0;renderPicker();});
+$('reqPeopleInput').addEventListener('blur',function(){ $('reqPeopleList').classList.remove('on'); this.setAttribute('aria-expanded','false'); });
+$('reqPeopleInput').addEventListener('keydown',function(ev){
+  var items=$('reqPeopleList').querySelectorAll('button');
+  if(ev.key==='ArrowDown'){ev.preventDefault();pickIdx=Math.min(items.length-1,pickIdx+1);renderPicker();}
+  else if(ev.key==='ArrowUp'){ev.preventDefault();pickIdx=Math.max(0,pickIdx-1);renderPicker();}
+  else if(ev.key==='Enter'){ev.preventDefault(); if(items[pickIdx<0?0:pickIdx]) addPerson(items[pickIdx<0?0:pickIdx].dataset.id);}
+  else if(ev.key==='Escape'){this.blur();}
+});
+
+/* ================= 회의 잡기: 길이 ================= */
+document.querySelectorAll('#durSeg button').forEach(function(b){
+  b.onclick=function(){ document.querySelectorAll('#durSeg button').forEach(function(x){x.setAttribute('aria-pressed',x===b);}); S.dur=+b.dataset.min; };
+});
+
+/* ================= 회의 잡기: 찾기 ================= */
+$('planForm').addEventListener('submit',function(ev){
+  ev.preventDefault();
+  var req={
+    agenda:$('agenda').value, title:$('title').value.trim()||$('title').placeholder.replace(/^예: /,''),
+    duration:S.dur, from:$('fromDate').value, deadlineDate:$('dlDate').value, deadlineTime:$('dlTime').value||'18:00',
+    requirements:readReqs(), requiredIds:S.reqPeople.concat($('meToo').checked&&S.reqPeople.indexOf(S.me)<0?[S.me]:[]), organizerId:S.me, room:$('roomSel').value, skipWeekend:$('skipWe').checked
+  };
+  if(!req.requirements.length && !req.requiredIds.length){ toast('필요 부서나 꼭 참석할 사람을 한 명 이상 넣어 주세요.',true); return; }
+  if(!req.deadlineDate){ toast('언제까지 끝나야 하는지 마감 날짜를 넣어 주세요.',true); return; }
+  run('findSlots',req).then(function(r){ S.last={req:req,res:r}; renderResults(); });
+});
+
+function personLine(id,people){ var p=people[id]; return p? esc(p.name)+' '+esc(p.rank) : esc(id); }
+
+function slotHTML(s,i,people,ok){
+  var lines=s.lines.map(function(l){
+    var names=l.picked.map(function(id){return personLine(id,people);}).join(', ');
+    var alt=l.alternates.length?'<span class="alt">대신 가능: '+l.alternates.map(function(id){return personLine(id,people);}).join(', ')+'</span>':'';
+    var short=l.short?'<span class="miss"> '+l.short+'명 부족</span>':'';
+    var already=(!l.picked.length && !l.short)?'<span class="muted">꼭 참석할 사람으로 채움</span>':'';
+    return '<div class="who-line"><b>'+esc(l.dept)+'</b><div>'+(names||'')+already+short+alt+'</div></div>';
+  }).join('');
+  var reqIds=S.last.req.requiredIds;
+  if(reqIds.length){
+    lines='<div class="who-line"><b>필수</b><div>'+reqIds.map(function(id){return personLine(id,people);}).join(', ')+'</div></div>'+lines;
+  }
+  var miss=s.missing.map(function(m){return esc(m.who)+' ('+esc(m.why)+')';}).join(', ');
+  var notes='';
+  if(!ok){
+    if(miss) notes+='<div class="miss">필수 참석자 불가: '+miss+'</div>';
+    if(s.noRoom) notes+='<div class="miss">빈 회의실 없음</div>';
+  }
+  return '<article class="slot'+(ok&&i===0?' best':'')+'">'+
+    '<div class="when">'+(ok?(i===0?'<span class="tag">가장 빠른 시간</span>':''):'<span class="tag warn">조건 일부 부족</span>')+
+      '<div class="d">'+nice(s.date)+'</div><div class="t">'+s.start+' – '+s.end+'</div>'+
+      '<div class="r">'+(s.room?esc(s.room):'회의실 미정')+' · '+s.attendees.length+'명</div></div>'+
+    '<div class="who">'+lines+notes+'</div>'+
+    '<div>'+(ok?'<button class="btn primary" data-i="'+i+'">이 시간으로 확정</button>':'<button class="btn" data-near="'+i+'">이대로 확정</button>')+'</div>'+
+  '</article>';
+}
+
+function renderResults(){
+  var r=S.last.res, box=$('results');
+  var sr=r.searched;
+  var range=nice(sr.from)+' ~ '+nice(sr.to)+' '+sr.deadlineTime+' 마감';
+  if(r.slots.length){
+    box.innerHTML='<div class="summary"><h2>추천 시간 '+r.slots.length+'개</h2><span>'+range+'</span></div>'+
+      r.slots.map(function(s,i){return slotHTML(s,i,r.people,true);}).join('');
+  } else {
+    box.innerHTML='<div class="summary"><h2>조건을 모두 맞추는 시간이 없어요</h2><span>'+range+'</span></div>'+
+      '<p class="muted" style="margin:0 0 12px">마감을 늦추거나, 회의 길이를 줄이거나, 최소 직급을 낮춰 보세요. 가장 가까운 시간은 아래와 같습니다.</p>'+
+      (r.nearMisses.length? r.nearMisses.map(function(s,i){return slotHTML(s,i,r.people,false);}).join('') : '<div class="panel">기간 안에 근무시간이 겹치는 시간이 없습니다. 날짜를 확인해 주세요.</div>');
+  }
+  box.querySelectorAll('button[data-i]').forEach(function(b){ b.onclick=function(){ confirmSlot(r.slots[+b.dataset.i]); }; });
+  box.querySelectorAll('button[data-near]').forEach(function(b){ b.onclick=function(){ confirmSlot(r.nearMisses[+b.dataset.near],true); }; });
+  if(window.innerWidth<980) box.scrollIntoView({behavior:'smooth',block:'start'}); else window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function confirmSlot(s,partial){
+  var q=S.last.req;
+  var msg=nice(s.date)+' '+s.start+'–'+s.end+(s.room?' · '+s.room:'')+'\n참석 '+s.attendees.length+'명으로 확정할까요?';
+  if(partial) msg+='\n(조건 일부가 부족한 시간입니다)';
+  if(!confirm(msg)) return;
+  run('confirmMeeting',{agenda:q.agenda,title:q.title,organizerId:q.organizerId,date:s.date,start:s.start,end:s.end,room:s.room,attendees:s.attendees,sendInvite:$('sendInv').checked})
+    .then(function(){
+      toast('회의를 확정했어요. 참석자 일정에도 들어갔습니다.');
+      $('results').innerHTML='<div class="results-empty"><h2>확정했습니다</h2><p style="margin:0;color:var(--ink2)">'+esc(q.title)+' · '+nice(s.date)+' '+s.start+'–'+s.end+(s.room?' · '+esc(s.room):'')+'</p><p style="margin-top:16px"><button class="btn" id="goMtgs">회의 목록 보기</button></p></div>';
+      $('goMtgs').onclick=function(){showView('mtgs');};
+    });
+}
+
+/* ================= 일정 ================= */
+var HOUR_FROM=7, HOUR_TO=21, HH=40;
+$('schedWho').addEventListener('change',loadWeek);
+$('wkPrev').onclick=function(){S.week=addD(S.week,-7);loadWeek();};
+$('wkNext').onclick=function(){S.week=addD(S.week,7);loadWeek();};
+$('wkToday').onclick=function(){S.week=mondayOf(S.boot.today);loadWeek();};
+function loadWeek(){
+  var who=$('schedWho').value||S.me; if(!who) return;
+  var to=addD(S.week,6);
+  $('wkLabel').textContent=nice(S.week)+' – '+nice(to);
+  var e=S.emp[who];
+  $('workHint').textContent=e?e.name+'님 근무시간 '+e.start+'–'+e.end+'. 근무시간 밖은 회의 추천에서 빠집니다.':'';
+  run('getSchedules',who,S.week,to).then(function(list){ S.weekList=list; renderWeek(list,e); });
+}
+function renderWeek(list,emp){
+  var w=$('week'); w.style.setProperty('--hh',HH+'px');
+  var html='<div class="dh"></div>';
+  for(var i=0;i<7;i++){ var d=addD(S.week,i), dd=pd(d); html+='<div class="dh'+(d===S.boot.today?' today':'')+(dd.getDay()%6===0?' we':'')+'">'+WD[dd.getDay()]+' '+(dd.getMonth()+1)+'/'+dd.getDate()+'</div>'; }
+  html+='<div class="hours">'; for(var h=HOUR_FROM;h<HOUR_TO;h++) html+='<div>'+(h===HOUR_FROM?'':h+':00')+'</div>'; html+='</div>';
+  var top0=HOUR_FROM*60, total=(HOUR_TO-HOUR_FROM)*60, px=function(m){return Math.max(0,Math.min(total,m-top0))/60*HH;};
+  for(var j=0;j<7;j++){
+    var day=addD(S.week,j);
+    html+='<div class="col" style="height:'+((HOUR_TO-HOUR_FROM)*HH)+'px" data-date="'+day+'">';
+    if(emp){ var ws=mins(emp.start), we=mins(emp.end);
+      html+='<div class="off" style="top:0;height:'+px(ws)+'px"></div><div class="off" style="top:'+px(we)+'px;bottom:0"></div>'; }
+    list.filter(function(s){return s.date===day;}).forEach(function(s){
+      var a=mins(s.start), b=mins(s.end), allDay=s.type==='휴무'&&a===0&&b>=1439;
+      var t=allDay?0:px(a), hgt=allDay?total/60*HH:Math.max(18,px(b)-px(a));
+      html+='<button class="ev t-'+esc(s.type)+'" style="top:'+t+'px;height:'+hgt+'px" data-id="'+esc(s.id)+'" aria-label="'+esc(s.type+' '+s.start+'부터 '+s.end+'까지 '+(s.memo||''))+'"><b>'+esc(s.type)+(allDay?' (종일)':'')+'</b>'+(allDay?'':esc(s.start)+'–'+esc(s.end)+'<br>')+esc(s.memo||'')+'</button>';
+    });
+    html+='</div>';
+  }
+  w.innerHTML=html;
+  w.querySelectorAll('.ev').forEach(function(b){ b.onclick=function(){ editSch(b.dataset.id); }; });
+  w.querySelectorAll('.col').forEach(function(c){ c.ondblclick=function(ev){ if(ev.target!==c&&!ev.target.classList.contains('off')) return;
+    var y=ev.offsetY+(ev.target.classList.contains('off')?ev.target.offsetTop:0), m=Math.floor((top0+y/HH*60)/30)*30; newSch(c.dataset.date,m); }; });
+}
+function hm(m){ return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function newSch(date,m){
+  $('schId').value=''; $('schFormTitle').textContent='일정 등록'; $('schDel').hidden=true; $('schNew').hidden=true; $('repeatBox').hidden=false;
+  if(date) $('schDate').value=date;
+  if(m!=null){ $('schStart').value=hm(m); $('schEnd').value=hm(m+60); }
+  $('schMemo').value=''; $('schRepeat').value=''; syncType();
+}
+function editSch(id){
+  var s=(S.weekList||[]).filter(function(x){return x.id===id;})[0]; if(!s) return;
+  if(s.meetingId){ toast('회의로 잡힌 일정이에요. 회의 목록에서 취소할 수 있습니다.'); return; }
+  $('schId').value=s.id; $('schFormTitle').textContent='일정 고치기'; $('schDel').hidden=false; $('schNew').hidden=false; $('repeatBox').hidden=true;
+  $('schType').value=s.type; $('schDate').value=s.date; $('schStart').value=s.start; $('schEnd').value=s.end; $('schMemo').value=s.memo||''; syncType();
+}
+function syncType(){ var off=$('schType').value==='휴무'; $('schTimes').hidden=off; }
+$('schType').addEventListener('change',syncType);
+$('schNew').onclick=function(){newSch();};
+$('schForm').addEventListener('submit',function(ev){
+  ev.preventDefault();
+  var p={id:$('schId').value,emp:$('schedWho').value,date:$('schDate').value,start:$('schStart').value,end:$('schEnd').value,type:$('schType').value,memo:$('schMemo').value.trim(),repeatUntil:$('schRepeat').value,skipWeekend:$('schSkipWe').checked};
+  if(p.type!=='휴무' && p.end<=p.start){ toast('끝나는 시간이 시작보다 늦어야 해요.',true); return; }
+  run('saveSchedule',p).then(function(){ toast('일정을 저장했어요.'); S.week=mondayOf(p.date); newSch(p.date); loadWeek(); });
+});
+$('schDel').onclick=function(){ if(!confirm('이 일정을 지울까요?')) return; run('deleteSchedule',$('schId').value).then(function(){toast('일정을 지웠어요.'); newSch(); loadWeek();}); };
+
+/* ================= 회의 목록 ================= */
+function loadMeetings(){ run('listMeetings').then(function(l){ S.mtgs=l; renderMeetings(); }); }
+$('onlyMine').addEventListener('change',renderMeetings);
+function renderMeetings(){
+  var list=(S.mtgs||[]).filter(function(m){ return !$('onlyMine').checked || m.attendeeIds.indexOf(S.me)>=0; });
+  var rows=list.map(function(m){
+    var c=m.status==='취소';
+    return '<tr><td><b>'+nice(m.date)+'</b><br>'+esc(m.start)+'–'+esc(m.end)+'</td>'+
+      '<td><b>'+esc(m.title)+'</b><br><span class="muted">'+esc(m.agenda||'안건 미지정')+' · 주관 '+esc(m.organizer||'-')+'</span></td>'+
+      '<td>'+esc(m.room||'-')+'</td><td>'+m.attendees.map(esc).join('<br>')+'</td>'+
+      '<td><span class="status'+(c?' cancel':'')+'">'+esc(m.status)+'</span></td>'+
+      '<td>'+(c?'':'<button class="btn sm danger" data-id="'+esc(m.id)+'">취소</button>')+'</td></tr>';
+  }).join('');
+  $('mtgTbl').innerHTML='<thead><tr><th style="width:150px">일시</th><th>회의</th><th style="width:170px">회의실</th><th style="width:230px">참석자</th><th style="width:70px">상태</th><th style="width:70px"></th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="6" class="muted" style="padding:28px 12px">아직 확정한 회의가 없습니다. ‘회의 잡기’에서 시작해 보세요.</td></tr>')+'</tbody>';
+  $('mtgTbl').querySelectorAll('button[data-id]').forEach(function(b){ b.onclick=function(){
+    if(!confirm('이 회의를 취소할까요? 참석자 일정에서도 빠집니다.')) return;
+    run('cancelMeeting',b.dataset.id).then(function(l){ S.mtgs=l; renderMeetings(); toast('회의를 취소했어요.'); });
+  }; });
+}
+
+/* ================= 직원 ================= */
+$('peopleSearch').addEventListener('input',renderEmpTable);
+function renderEmpTable(){
+  var q=$('peopleSearch').value.trim().toLowerCase();
+  var list=S.boot.employees.filter(function(e){ return !q || (e.name+e.dept+e.rank+e.role).toLowerCase().indexOf(q)>=0; });
+  var ri=function(r){return S.boot.ranks.indexOf(r);};
+  list.sort(function(a,b){ return a.dept.localeCompare(b.dept) || ri(b.rank)-ri(a.rank) || a.name.localeCompare(b.name); });
+  $('empTbl').innerHTML='<thead><tr><th>이름</th><th>부서</th><th>직급</th><th>담당</th><th>근무시간</th></tr></thead><tbody>'+
+    list.map(function(e){ return '<tr tabindex="0" data-id="'+e.id+'" style="cursor:pointer"><td><b>'+esc(e.name)+'</b> <span class="muted">'+esc(e.id)+'</span></td><td>'+esc(e.dept)+'</td><td>'+esc(e.rank)+'</td><td>'+esc(e.role||'')+'</td><td>'+esc(e.start)+'–'+esc(e.end)+'</td></tr>'; }).join('')+'</tbody>';
+  $('empTbl').querySelectorAll('tr[data-id]').forEach(function(tr){ tr.onclick=function(){editEmp(tr.dataset.id);}; tr.onkeydown=function(ev){ if(ev.key==='Enter') editEmp(tr.dataset.id); }; });
+}
+function editEmp(id){
+  var e=S.emp[id]; if(!e) return;
+  $('empId').value=e.id; $('empFormTitle').textContent=e.name+'님 정보 고치기'; $('empDel').hidden=false; $('empNew').hidden=false;
+  $('empName').value=e.name; $('empDept').value=e.dept; $('empRank').value=e.rank; $('empRole').value=e.role||''; $('empEmail').value=e.email||''; $('empStart').value=e.start; $('empEnd').value=e.end;
+}
+function newEmp(){ $('empForm').reset(); $('empId').value=''; $('empFormTitle').textContent='직원 등록'; $('empDel').hidden=true; $('empNew').hidden=true; }
+$('empNew').onclick=newEmp;
+$('empForm').addEventListener('submit',function(ev){
+  ev.preventDefault();
+  var p={id:$('empId').value,name:$('empName').value,dept:$('empDept').value,rank:$('empRank').value,role:$('empRole').value,email:$('empEmail').value,start:$('empStart').value,end:$('empEnd').value};
+  run('saveEmployee',p).then(function(b){ S.boot=b; S.emp={}; b.employees.forEach(function(e){S.emp[e.id]=e;}); fillStatic(); renderEmpTable(); newEmp(); toast('직원 정보를 저장했어요.'); });
+});
+$('empDel').onclick=function(){
+  if(!confirm('이 직원을 지울까요? 등록된 일정은 남습니다.')) return;
+  run('deleteEmployee',$('empId').value).then(function(b){ S.boot=b; S.emp={}; b.employees.forEach(function(e){S.emp[e.id]=e;}); fillStatic(); renderEmpTable(); newEmp(); toast('삭제했어요.'); });
+};
+
+boot().catch(function(){});
+</script>
+</body>
+</html>
